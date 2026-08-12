@@ -1,0 +1,76 @@
+# GitCMS-Lab GitHub Pages 자동 빌드 및 배포 워크플로우
+# 문서, 댓글 YAML, 프론트엔드 변경 시 정적 번들(_site)을 생성하여 Pages로 자동 배포합니다.
+
+name: Pages
+
+# 1. 트리거 조건: main 브랜치 push (특정 경로 변경 시) 또는 수동 실행
+on:
+  push:
+    branches: [main]
+    paths:
+      - "content/**"
+      - "comments/**"
+      - "site/**"
+      - "config.yaml"
+      - "scripts/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch: # Actions 탭에서 수동 실행 허용
+
+# 2. 보안 권한: 소스 읽기, Pages 배포 및 OIDC 토큰 생성 최소 권한 부여
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 3. 동시성 제어: 연속 push 발생 시 이전 진행 중인 배포 작업을 취소하여 꼬임 방지
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # 4. 빌드 작업: 마크다운/YAML 변환 및 정적 웹사이트 아티팩트 구성
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 전체 커밋 히스토리(fetch-depth: 0)를 가져와 git log로 문서 갱신 시각 및 커밋 SHA 조회
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Python 3.12 환경 구성
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # PyYAML 의존성 설치
+      - run: pip install pyyaml
+
+      # build-bundle.py 실행하여 content/와 comments/를 _site/data/bundle.json 으로 변환
+      - name: 번들 생성
+        run: python3 scripts/build-bundle.py
+
+      # 프론트엔드 index.html 복사 및 필수 meta 태그 검증
+      - name: 사이트 구성
+        run: |
+          cp site/index.html _site/index.html
+          grep -q '<meta charset="utf-8">' _site/index.html || {
+            echo "::error::index.html 에 meta charset 이 없습니다"
+            exit 1
+          }
+
+      # 생성된 _site 디렉토리를 GitHub Pages 배포용 아티팩트로 업로드
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  # 5. 배포 작업: 빌드된 아티팩트를 실제 GitHub Pages 호스팅 서버로 전달
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
