@@ -50,6 +50,72 @@
     background: none;
     padding: 0;
   }
+    .cbtn {
+    margin-left: 8px;
+    border: 1px solid #e4e4e4;
+    background: #fff;
+    color: #6b6b6b;
+    border-radius: 999px;
+    min-width: 24px;
+    height: 22px;
+    font-size: 12px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+
+  .cbtn.on {
+    border-color: #2f6f4f;
+    color: #2f6f4f;
+    font-weight: 600;
+  }
+
+  .sec.live {
+    background: #fff6d8;
+    border-radius: 6px;
+  }
+
+  .card {
+    border: 1px solid #e4e4e4;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+
+  .card .anchor {
+    font-size: 11px;
+    color: #2f6f4f;
+    word-break: break-all;
+  }
+
+  .msg {
+    border-top: 1px dashed #e4e4e4;
+    padding-top: 6px;
+    margin-top: 6px;
+    font-size: 14px;
+  }
+
+  .msg .who {
+    font-size: 11px;
+    color: #6b6b6b;
+  }
+
+  .card.resolved {
+    opacity: .5;
+  }
+
+  .gone {
+    font-size: 11px;
+    color: #a4552b;
+  }
+
+  .act {
+    border: 1px solid #e4e4e4;
+    background: #fff;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 12px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -65,10 +131,13 @@
 </main>
 <script>
 let BUNDLE = null;
-const state = { docId: null };
+const state = { docId: null, anchor: null };
 
 const $ = (selector) => document.querySelector(selector);
 const doc = () => BUNDLE.docs.find((item) => item.id === state.docId);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const threads = (id) => BUNDLE.comments[id] || [];
 
 function renderNav() {
   $("#nav").innerHTML = BUNDLE.docs.map((item) =>
@@ -81,27 +150,75 @@ function renderDoc() {
 
   $("#doc").innerHTML = current.blocks.map((block) => {
     if (block.type === "code") {
-      return `<pre><code>${block.text}</code></pre>`;
+      return `<pre><code>${esc(block.text)}</code></pre>`;
     }
 
     if (block.type === "ul") {
       return `<ul>${block.items.map((item) => `<li>${item}</li>`).join("")}</ul>`;
     }
 
-    return `<${block.type}>${block.html}</${block.type}>`;
+    if (!block.anchor) {
+      return `<${block.type}>${block.html}</${block.type}>`;
+    }
+
+    const open = threads(current.id)
+      .filter((t) => t.anchor === block.anchor && !t.resolved).length;
+    const live = state.anchor === block.anchor ? " live" : "";
+
+    return `<${block.type} class="sec${live}">${block.html}` +
+      `<button class="cbtn${open ? " on" : ""}" data-anchor="${block.anchor}">` +
+      `${open || "+"}</button></${block.type}>`;
   }).join("");
+}
+
+function renderPanel() {
+  const current = doc();
+  const live = new Set(
+    current.blocks.filter((b) => b.anchor).map((b) => b.anchor)
+  );
+  const list = threads(current.id)
+    .filter((t) => !state.anchor || t.anchor === state.anchor);
+
+  const head = state.anchor
+    ? `<button class="act" data-act="clear">전체 보기</button>`
+    : `<small>제목 옆 버튼으로 앵커를 고릅니다</small>`;
+
+  const cards = list.length
+    ? list.map((t) => `
+        <div class="card ${t.resolved ? "resolved" : ""}">
+          <div class="anchor">${esc(t.anchor)}
+            ${live.has(t.anchor) ? "" : `<span class="gone">· 사라진 섹션</span>`}
+          </div>
+          ${t.messages.map((m) => `
+            <div class="msg">
+              <div class="who">${esc(m.who)} · ${esc(m.when)}</div>
+              ${esc(m.body)}
+            </div>`).join("")}
+        </div>`).join("")
+    : `<small>이 앵커에는 댓글이 없습니다</small>`;
+
+  $("#panel").innerHTML = `<div style="margin-bottom:10px">${head}</div>${cards}`;
 }
 
 function render() {
   renderNav();
   renderDoc();
+  renderPanel();
 }
 
 document.addEventListener("click", (event) => {
-  const link = event.target.closest("[data-doc]");
-  if (!link) return;
+  const el = event.target.closest("[data-doc],[data-anchor],[data-act]");
+  if (!el) return;
 
-  state.docId = link.dataset.doc;
+  if (el.dataset.act === "clear") {
+    state.anchor = null;
+  } else if (el.dataset.doc) {
+    state.docId = el.dataset.doc;
+    state.anchor = null;
+  } else {
+    state.anchor = state.anchor === el.dataset.anchor ? null : el.dataset.anchor;
+  }
+
   render();
 });
 
