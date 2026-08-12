@@ -28,6 +28,7 @@
     padding: 6px 8px;
     color: inherit;
     text-decoration: none;
+    cursor: pointer;
   }
 
   article h1 {
@@ -51,5 +52,57 @@
   <article id="doc"></article>
   <aside id="panel"></aside>
 </main>
+<script>
+let BUNDLE = null;
+const state = { docId: null };
+
+const $ = (selector) => document.querySelector(selector);
+const doc = () => BUNDLE.docs.find((item) => item.id === state.docId);
+
+function renderNav() {
+  $("#nav").innerHTML = BUNDLE.docs.map((item) =>
+    `<a data-doc="${item.id}">${item.title}</a>`
+  ).join("");
+}
+
+function renderDoc() {
+  const current = doc();
+
+  $("#doc").innerHTML = current.blocks.map((block) => {
+    if (block.type === "code") {
+      return `<pre><code>${block.text}</code></pre>`;
+    }
+
+    if (block.type === "ul") {
+      return `<ul>${block.items.map((item) => `<li>${item}</li>`).join("")}</ul>`;
+    }
+
+    return `<${block.type}>${block.html}</${block.type}>`;
+  }).join("");
+}
+
+function render() {
+  renderNav();
+  renderDoc();
+}
+
+document.addEventListener("click", (event) => {
+  const link = event.target.closest("[data-doc]");
+  if (!link) return;
+
+  state.docId = link.dataset.doc;
+  render();
+});
+
+(async function boot() {
+  BUNDLE = await (
+    await fetch("data/bundle.json", { cache: "no-store" })
+  ).json();
+
+  state.docId = BUNDLE.docs[0]?.id ?? null;
+  $("#build").textContent = `빌드 ${BUNDLE.buildSha}`;
+  render();
+})();
+</script>
 </body>
 </html>
