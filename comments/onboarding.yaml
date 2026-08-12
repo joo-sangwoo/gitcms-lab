@@ -1,8 +1,0 @@
-- id: 1
-  anchor: "sec.개발-환경"
-  rev: "—"
-  resolved: false
-  messages:
-  - who: "joosangwoo"
-    when: "2026-08-12"
-    body: "setup.sh가 M1 맥에서도 그대로 동작하나요?"
