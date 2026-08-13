@@ -15,3 +15,12 @@
     - who: "joo-sangwoo"
       when: "2026-08-13"
       body: "안녕 첫번째 댓글이야"
+
+- id: 3
+  anchor: "sec.q2-배포-승인"
+  rev: "02a5a90"
+  resolved: false
+  messages:
+    - who: "joo-sangwoo"
+      when: "2026-08-13"
+      body: "두번쨰 댓글이야"
