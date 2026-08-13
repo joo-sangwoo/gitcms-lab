@@ -3,6 +3,15 @@
   rev: "—"
   resolved: false
   messages:
-  - who: "joosangwoo"
-    when: "2026-08-12"
-    body: "setup.sh가 M1 맥에서도 그대로 동작하나요?"
+    - who: "joosangwoo"
+      when: "2026-08-12"
+      body: "setup.sh가 M1 맥에서도 그대로 동작하나요?"
+
+- id: 2
+  anchor: "sec.q2-배포-승인"
+  rev: "02a5a90"
+  resolved: false
+  messages:
+    - who: "joo-sangwoo"
+      when: "2026-08-13"
+      body: "안녕 첫번째 댓글이야"
