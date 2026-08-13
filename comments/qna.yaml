@@ -19,7 +19,7 @@
 - id: 3
   anchor: "sec.q2-배포-승인"
   rev: "02a5a90"
-  resolved: false
+  resolved: true
   messages:
     - who: "joo-sangwoo"
       when: "2026-08-13"
