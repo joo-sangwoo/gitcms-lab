@@ -220,6 +220,13 @@ function renderPanel() {
               <div class="who">${esc(m.who)} · ${esc(m.when)}</div>
               ${esc(m.body)}
             </div>`).join("")}
+          <div style="margin-top:8px">
+            <textarea data-reply="${t.id}" rows="2" placeholder="답글"></textarea>
+            <button class="act" data-act="reply" data-id="${t.id}">답글</button>
+            <button class="act" data-act="resolve" data-id="${t.id}">
+              ${t.resolved ? "다시 열기" : "해결"}
+            </button>
+          </div>
         </div>`).join("")
     : `<small>이 앵커에는 댓글이 없습니다</small>`;
 
@@ -244,9 +251,10 @@ document.addEventListener("click", async (event) => {
   if (!el) return;
 
   // 저장은 실패할 수 있으므로 아래 화면 전환 분기와 분리해 처리한다.
-  if (el.dataset.act === "create") {
+  // 저장을 일으키는 액션들. 화면 전환 분기와 분리해 오류를 처리한다.
+  if (["create", "reply", "resolve"].includes(el.dataset.act)) {
     try {
-      await runAction("create");
+      await runAction(el.dataset.act, el.dataset.id);
     } catch (err) {
       // CONFLICT 는 우리 검사, 나머지는 GitHub 이 준 상태 코드다.
       alert(err.message === "CONFLICT"
@@ -433,6 +441,32 @@ async function runAction(act, id) {
         messages: [{ who, when, body }],
       });
     }, `comments(${state.docId}): 새 댓글`);
+  }
+
+  // 기존 스레드에 메시지를 덧붙인다. 파일 저장 흐름은 create 와 완전히 같다.
+  if (act === "reply") {
+    // 카드마다 입력창이 따로 있으므로 id 로 해당 카드의 것을 찾는다.
+    const box = document.querySelector(`[data-reply="${id}"]`);
+    const body = box.value.trim();
+    if (!body) return;
+
+    const who = $("#me").textContent || "unknown";
+    const when = new Date().toISOString().slice(0, 10);
+
+    await save((list) => {
+      // id 는 문자열로 넘어오므로 숫자로 바꿔 비교한다.
+      list.find((t) => t.id === Number(id))
+        .messages.push({ who, when, body });
+    }, `comments(${state.docId}): 스레드 ${id} 답글`);
+  }
+
+  // 해결 상태만 뒤집는다. 삭제 대신 이 방식을 쓰는 이유는
+  // 왜 그렇게 결정했는지가 이력으로 남기 때문이다.
+  if (act === "resolve") {
+    await save((list) => {
+      const thread = list.find((t) => t.id === Number(id));
+      thread.resolved = !thread.resolved;
+    }, `comments(${state.docId}): 스레드 ${id} 해결 상태 변경`);
   }
 }
 
