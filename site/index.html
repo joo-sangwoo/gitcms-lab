@@ -250,9 +250,13 @@ document.addEventListener("click", async (event) => {
   const el = event.target.closest("[data-doc],[data-anchor],[data-act]");
   if (!el) return;
 
-  // 저장은 실패할 수 있으므로 아래 화면 전환 분기와 분리해 처리한다.
   // 저장을 일으키는 액션들. 화면 전환 분기와 분리해 오류를 처리한다.
   if (["create", "reply", "resolve"].includes(el.dataset.act)) {
+    // 눌린 버튼을 그대로 잠근다. 저장이 끝나기 전에 다시 눌리면
+    // 두 요청이 같은 시점의 sha 를 들고 출발해 나중 것이 409 로 막힌다.
+    if (el.disabled) return;
+    el.disabled = true;
+
     try {
       await runAction(el.dataset.act, el.dataset.id);
     } catch (err) {
@@ -260,6 +264,10 @@ document.addEventListener("click", async (event) => {
       alert(err.message === "CONFLICT"
         ? "다른 사람이 먼저 저장했습니다. 새로고침한 뒤 다시 작성하세요."
         : `저장 실패: ${err.message}`);
+    } finally {
+      // 저장에 성공하면 render 가 카드를 새로 그려 이 버튼은 버려진다.
+      // 실패했거나 빈 입력이라 저장을 건너뛴 경우에만 실제로 풀린다.
+      el.disabled = false;
     }
     return;
   }
@@ -416,18 +424,9 @@ async function save(mutate, message) {
 /* 화면의 버튼을 저장으로 연결한다. 6단계에서 답글·해결이 여기 붙는다. */
 async function runAction(act, id) {
   if (act === "create") {
-    // 저장이 끝나기 전에 다시 눌리면 같은 댓글이 두 번 나간다.
-    // 두 요청이 같은 시점의 sha 를 들고 출발해 나중 것이 409 로 막힌다.
-    const button = document.querySelector('[data-act="create"]');
-    if (button.disabled) return;
-    button.disabled = true;
-
     // 빈 댓글은 저장하지 않는다.
     const body = $("#newBody").value.trim();
-    if (!body) {
-      button.disabled = false;
-      return;
-    }
+    if (!body) return;
 
     // save 안에서 render 가 돌면 입력창이 사라지므로 값을 먼저 꺼내 둔다.
     const anchor = state.anchor;
