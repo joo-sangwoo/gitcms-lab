@@ -261,8 +261,11 @@ document.addEventListener("click", async (event) => {
       await runAction(el.dataset.act, el.dataset.id);
     } catch (err) {
       // CONFLICT 는 우리 검사, 나머지는 GitHub 이 준 상태 코드다.
+      // 화면이 보는 기준은 번들이 만들어진 시점이라, 해소 방법이 환경마다 다르다.
       alert(err.message === "CONFLICT"
-        ? "다른 사람이 먼저 저장했습니다. 새로고침한 뒤 다시 작성하세요."
+        ? "댓글 파일이 그새 바뀌었습니다.\n\n" +
+          "배포 사이트: 새로고침\n" +
+          "로컬: git pull 후 빌드하고 새로고침"
         : `저장 실패: ${err.message}`);
     } finally {
       // 저장에 성공하면 render 가 카드를 새로 그려 이 버튼은 버려진다.
