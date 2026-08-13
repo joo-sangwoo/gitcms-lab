@@ -24,6 +24,9 @@
     - who: "joo-sangwoo"
       when: "2026-08-13"
       body: "두번쨰 댓글이야"
+    - who: "joo-sangwoo"
+      when: "2026-08-13"
+      body: "안녕"
 
 - id: 4
   anchor: "sec.q2-배포-승인"
