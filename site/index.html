@@ -12,9 +12,16 @@
   }
 
   header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 12px 18px;
     border-bottom: 1px solid #e4e4e4;
   }
+
+  header .grow { flex: 1; }
+
+  #me { color: #2f6f4f; }
 
   main {
     display: grid;
@@ -122,6 +129,9 @@
 <header>
   <strong>문서 댓글</strong>
   <small id="build"></small>
+  <span class="grow"></span>
+  <button class="act" id="tokenBtn">토큰</button>
+  <small id="me"></small>
 </header>
 
 <main>
@@ -222,6 +232,52 @@ document.addEventListener("click", (event) => {
   render();
 });
 
+/* ══ 토큰 ══════════════════════════════════════════════════════════════
+   코드에 비밀값을 두지 않는다. 사용자가 자기 토큰을 넣는다. */
+const token = () => localStorage.getItem("gh_token") || "";
+
+$("#tokenBtn").onclick = async () => {
+  const value = prompt("GitHub fine-grained PAT", token());
+  if (value === null) return;
+
+  localStorage.setItem("gh_token", value.trim());
+
+  try {
+    await verifyToken();
+  } catch (err) {
+    $("#me").textContent = "";
+    alert(`토큰 확인 실패: ${err.message}`);
+  }
+};
+
+async function verifyToken() {
+  const user = await gh("/user");
+  $("#me").textContent = user.login;
+}
+
+/* ══ GitHub REST ══════════════════════════════════════════════════════ */
+async function gh(path, options = {}) {
+  const response = await fetch("https://api.github.com" + path, {
+    method: options.method || "GET",
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Authorization": `Bearer ${token()}`,
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: options.body,
+  });
+
+  if (!response.ok) {
+    const text = (await response.text()).slice(0, 200);
+    const error = new Error(`${response.status} ${text}`);
+    error.status = response.status;
+    throw error;
+  }
+
+  return response.status === 204 ? null : response.json();
+}
+
 (async function boot() {
   BUNDLE = await (
     await fetch("data/bundle.json", { cache: "no-store" })
@@ -229,6 +285,7 @@ document.addEventListener("click", (event) => {
 
   state.docId = BUNDLE.docs[0]?.id ?? null;
   $("#build").textContent = `빌드 ${BUNDLE.buildSha}`;
+  if (token()) verifyToken().catch(() => {});
   render();
 })();
 </script>
