@@ -123,6 +123,16 @@
     font-size: 12px;
     cursor: pointer;
   }
+
+  textarea {
+    width: 100%;
+    border: 1px solid #e4e4e4;
+    border-radius: 6px;
+    padding: 6px;
+    font: inherit;
+    resize: vertical;
+    margin: 6px 0;
+  }
 </style>
 </head>
 <body>
@@ -189,8 +199,14 @@ function renderPanel() {
   const list = threads(current.id)
     .filter((t) => !state.anchor || t.anchor === state.anchor);
 
+  // 앵커를 고른 상태에서만 입력창을 띄운다. 어디에 붙일지 정해져야 쓸 수 있다.
   const head = state.anchor
-    ? `<button class="act" data-act="clear">전체 보기</button>`
+    ? `<div class="card">
+         <div class="anchor">${esc(state.anchor)}</div>
+         <textarea id="newBody" rows="3" placeholder="새 댓글"></textarea>
+         <button class="act" data-act="create">등록</button>
+         <button class="act" data-act="clear">취소</button>
+       </div>`
     : `<small>제목 옆 버튼으로 앵커를 고릅니다</small>`;
 
   const cards = list.length
@@ -207,7 +223,13 @@ function renderPanel() {
         </div>`).join("")
     : `<small>이 앵커에는 댓글이 없습니다</small>`;
 
-  $("#panel").innerHTML = `<div style="margin-bottom:10px">${head}</div>${cards}`;
+  // 커밋은 됐어도 Pages 재빌드 전이라 새로고침하면 사라진다. 그 간극을 알린다.
+  const pending = state.pending
+    ? `<div class="gone">저장됨 · 배포 반영까지 1~2분</div>`
+    : "";
+
+  $("#panel").innerHTML =
+    `<div style="margin-bottom:10px">${head}${pending}</div>${cards}`;
 }
 
 function render() {
@@ -216,9 +238,23 @@ function render() {
   renderPanel();
 }
 
-document.addEventListener("click", (event) => {
+// 저장은 비동기라 핸들러 자체를 async 로 바꾼다.
+document.addEventListener("click", async (event) => {
   const el = event.target.closest("[data-doc],[data-anchor],[data-act]");
   if (!el) return;
+
+  // 저장은 실패할 수 있으므로 아래 화면 전환 분기와 분리해 처리한다.
+  if (el.dataset.act === "create") {
+    try {
+      await runAction("create");
+    } catch (err) {
+      // CONFLICT 는 우리 검사, 나머지는 GitHub 이 준 상태 코드다.
+      alert(err.message === "CONFLICT"
+        ? "다른 사람이 먼저 저장했습니다. 새로고침한 뒤 다시 작성하세요."
+        : `저장 실패: ${err.message}`);
+    }
+    return;
+  }
 
   if (el.dataset.act === "clear") {
     state.anchor = null;
@@ -313,6 +349,91 @@ function b64(text) {
   }
 
   return btoa(binary);
+}
+
+/* ══ 저장 ══════════════════════════════════════════════════════════════
+   파일을 통째로 바꿔 커밋한다. 배열을 어떻게 바꿀지는 mutate 가 정한다.
+   6단계의 답글·해결도 같은 흐름이라 이 함수 하나를 공유한다.
+   나중에 workflow_dispatch 방식으로 옮길 때도 여기만 갈아끼우면 된다. */
+async function save(mutate, message) {
+  // 인증 없이 호출하면 401 이 난다. 그 전에 걸러 낸다.
+  if (!token()) throw new Error("토큰을 먼저 넣으세요");
+
+  const docId = state.docId;
+  const path = `comments/${docId}.yaml`;
+  const { repo, branch } = BUNDLE.config;
+
+  // 현재 GitHub 에 있는 파일을 읽는다. 아직 없는 문서면 404 가 나는데,
+  // 그건 오류가 아니라 "새로 만들어야 한다"는 뜻이므로 통과시킨다.
+  let current = null;
+
+  try {
+    current = await gh(`/repos/${repo}/contents/${path}?ref=${branch}`);
+  } catch (err) {
+    if (err.status !== 404) throw err;
+  }
+
+  // 화면이 만들어질 때의 파일과 지금 파일이 같은지 본다.
+  // 다르면 내가 보고 있는 댓글 목록이 이미 낡았다는 뜻이라 멈춘다.
+  const known = BUNDLE.commentsMeta[docId]?.sha ?? null;
+  if ((current?.sha ?? null) !== known) throw new Error("CONFLICT");
+
+  // 메모리의 배열을 바꾼다. 아직 GitHub 에는 아무 영향이 없다.
+  mutate(threads(docId));
+
+  // 바뀐 배열을 YAML 로 만들어 파일 전체를 덮어쓴다.
+  // sha 는 "이 버전을 고친다"는 뜻이고, 그새 바뀌었으면 GitHub 이 409 로 막는다.
+  const result = await gh(`/repos/${repo}/contents/${path}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      message,
+      content: b64(dumpComments(threads(docId))),
+      branch,
+      ...(current ? { sha: current.sha } : {}),
+    }),
+  });
+
+  // 방금 만든 파일 상태를 새 기준으로 삼는다.
+  // 안 하면 두 번째 저장부터 전부 CONFLICT 로 막힌다.
+  BUNDLE.commentsMeta[docId] = { sha: result.content.sha };
+
+  // 저장은 됐지만 배포 전이라 화면과 실제 사이트가 잠시 다르다.
+  state.pending = true;
+  render();
+}
+
+/* 화면의 버튼을 저장으로 연결한다. 6단계에서 답글·해결이 여기 붙는다. */
+async function runAction(act, id) {
+  if (act === "create") {
+    // 저장이 끝나기 전에 다시 눌리면 같은 댓글이 두 번 나간다.
+    // 두 요청이 같은 시점의 sha 를 들고 출발해 나중 것이 409 로 막힌다.
+    const button = document.querySelector('[data-act="create"]');
+    if (button.disabled) return;
+    button.disabled = true;
+
+    // 빈 댓글은 저장하지 않는다.
+    const body = $("#newBody").value.trim();
+    if (!body) {
+      button.disabled = false;
+      return;
+    }
+
+    // save 안에서 render 가 돌면 입력창이 사라지므로 값을 먼저 꺼내 둔다.
+    const anchor = state.anchor;
+    const rev = doc().rev.sha;      // 작성 시점의 문서 커밋. 나중에 낡음 판정에 쓴다
+    const who = $("#me").textContent || "unknown";
+    const when = new Date().toISOString().slice(0, 10);
+
+    await save((list) => {
+      // id 는 파일 안에서만 유일하면 된다. 동시 작성이 겹치면 PR 에서 드러난다.
+      const nextId = Math.max(0, ...list.map((t) => t.id)) + 1;
+
+      list.push({
+        id: nextId, anchor, rev, resolved: false,
+        messages: [{ who, when, body }],
+      });
+    }, `comments(${state.docId}): 새 댓글`);
+  }
 }
 
 (async function boot() {
