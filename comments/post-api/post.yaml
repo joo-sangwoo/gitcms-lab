@@ -1,0 +1,8 @@
+- id: 1
+  anchor: "res.title"
+  spec: "7c6e584"
+  resolved: false
+  messages:
+    - who: "joo-sangwoo"
+      when: "2026-08-21"
+      body: "타이틀 작성"
