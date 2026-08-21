@@ -1,0 +1,26 @@
+# 사람이 쓰는 설명. 배포가 이 파일을 건드리지 않는다.
+#
+# 앵커는 스펙의 필드 경로에서 나온다 — req.{필드}, res.{필드}, rc.{번호}, ep.desc
+# 스펙에 description 이 있어도 여기 ko 가 있으면 이쪽이 이긴다.
+
+ep.desc:
+  ko: 글을 새로 만든다. 본문은 암호화해서 보낸다.
+
+req.title:
+  ko: 글 제목. 50자를 넘으면 rCode 1000 으로 거절된다.
+
+req.body:
+  ko: 글 본문. 빈 문자열은 허용하지 않는다.
+
+res.id:
+  ko: 만들어진 글의 식별자.
+
+res.isPublished:
+  ko: 공개 여부. 지금은 항상 false 로 만들어지고 별도 API 로 공개한다.
+
+# 아직 스펙에 없는 필드다. 구현되면 스펙에 나타나 이 제안은 자동으로 사라진다.
+res.viewCount:
+  status: proposed
+  type: int
+  ko: 조회수. 목록 화면에서 필요하다.
+  proposedBy: unity-kim
