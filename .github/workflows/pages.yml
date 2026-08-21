@@ -1,5 +1,5 @@
 # GitCMS-Lab GitHub Pages 자동 빌드 및 배포 워크플로우
-# 문서, 댓글 YAML, 프론트엔드 변경 시 정적 번들(_site)을 생성하여 Pages로 자동 배포합니다.
+# 스펙 JSON, 오버레이·댓글 YAML, 프론트엔드 변경 시 정적 번들(_site)을 생성하여 Pages로 자동 배포합니다.
 
 name: Pages
 
@@ -8,10 +8,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "content/**"
+      - "spec/**"
+      - "overlay/**"
       - "comments/**"
       - "site/**"
       - "config.yaml"
+      - "projects.yaml"
       - "scripts/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch: # Actions 탭에서 수동 실행 허용
@@ -28,7 +30,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 4. 빌드 작업: 마크다운/YAML 변환 및 정적 웹사이트 아티팩트 구성
+  # 4. 빌드 작업: 스펙·YAML 병합 및 정적 웹사이트 아티팩트 구성
   build:
     runs-on: ubuntu-latest
     steps:
@@ -45,7 +47,7 @@ jobs:
       # PyYAML 의존성 설치
       - run: pip install pyyaml
 
-      # build-bundle.py 실행하여 content/와 comments/를 _site/data/bundle.json 으로 변환
+      # build-bundle.py 실행하여 spec/·overlay/·comments/를 _site/data/bundle.json 으로 변환
       - name: 번들 생성
         run: python3 scripts/build-bundle.py
 

@@ -1,0 +1,14 @@
+# 문서 포털 레지스트리.
+#
+# 포털은 서비스를 하드코딩하지 않는다. 새 서비스를 붙일 때 화면 코드를 고칠 일이 없어야 한다.
+# 여기에 항목을 추가하고 spec/{project}/{env}.json 을 올리면 목록에 나온다.
+#
+# 환경 구성은 프로젝트마다 다르다. dev/stage/prod 3단을 전제하지 않는다.
+
+projects:
+  - id: post-api
+    name: 글 API
+    repo: joo-sangwoo/gitcms-lab
+    envs:
+      dev:
+        roles: [개발]

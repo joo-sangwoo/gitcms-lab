@@ -3,12 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>문서 댓글</title>
+<title>API 문서</title>
 <style>
   body {
     margin: 0;
     font: 15px/1.7 -apple-system, sans-serif;
     color: #1a1a1a;
+    /* 배경을 명시한다. 안 그러면 브라우저가 다크 모드일 때 배경만 검게 깔리고
+       글자색은 그대로라 아무것도 안 보인다. */
+    background: #fff;
   }
 
   header {
@@ -25,47 +28,138 @@
 
   main {
     display: grid;
-    grid-template-columns: 180px minmax(0, 1fr) 320px;
+    grid-template-columns: 240px minmax(0, 1fr) 320px;
     gap: 24px;
     padding: 24px 18px;
   }
 
+  nav .group {
+    font-size: 11px;
+    color: #6b6b6b;
+    letter-spacing: .06em;
+    margin: 14px 0 4px;
+  }
+
   nav a {
     display: block;
-    padding: 6px 8px;
+    padding: 5px 8px;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
   }
 
-  article h1 {
-    margin-top: 0;
+  nav a.on {
+    background: #f1f4f2;
+    color: #2f6f4f;
   }
+
+  article h1 { margin-top: 0; }
 
   aside {
     border-left: 1px solid #e4e4e4;
     padding-left: 18px;
   }
-    article pre {
-    background: #f7f7f7;
-    padding: 12px 14px;
-    border-radius: 8px;
-    overflow: auto;
+
+  .eyebrow {
+    font-size: 11px;
+    color: #6b6b6b;
+    letter-spacing: .06em;
   }
 
-  article pre code {
-    background: none;
-    padding: 0;
+  .path {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 17px;
   }
-    .cbtn {
-    margin-left: 8px;
+
+  .method {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: #eef1f5;
+    color: #4a5568;
+  }
+
+  .method.m-post { background: #e8f2ec; color: #2f6f4f; }
+
+  .seal {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid #d8b96a;
+    color: #8a6d1f;
+  }
+
+  .seal.plain { border-color: #e4e4e4; color: #8a8a8a; }
+
+  h3 {
+    font-size: 12px;
+    color: #6b6b6b;
+    letter-spacing: .08em;
+    margin: 26px 0 8px;
+    border-bottom: 1px solid #e4e4e4;
+    padding-bottom: 6px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 11px;
+    color: #6b6b6b;
+    padding: 6px 8px;
+    border-bottom: 1px solid #e4e4e4;
+  }
+
+  td {
+    padding: 7px 8px;
+    border-bottom: 1px solid #f2f2f2;
+    vertical-align: top;
+  }
+
+  tr.live td { background: #fff6d8; }
+
+  td.name, td.type {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+  }
+
+  td.type { color: #2f6f4f; }
+
+  .req-y { color: #a4552b; }
+
+  .chip {
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid #e4e4e4;
+    color: #8a8a8a;
+  }
+
+  .chip.todo { color: #a4552b; border-color: #e8cfc4; }
+  .chip.proposed { color: #2f6f4f; border-color: #bcd8c8; }
+
+  .cbtn {
+    margin-left: 6px;
     border: 1px solid #e4e4e4;
     background: #fff;
     color: #6b6b6b;
     border-radius: 999px;
-    min-width: 24px;
-    height: 22px;
-    font-size: 12px;
+    min-width: 22px;
+    height: 20px;
+    font-size: 11px;
     cursor: pointer;
     vertical-align: middle;
   }
@@ -74,11 +168,6 @@
     border-color: #2f6f4f;
     color: #2f6f4f;
     font-weight: 600;
-  }
-
-  .sec.live {
-    background: #fff6d8;
-    border-radius: 6px;
   }
 
   .card {
@@ -92,6 +181,7 @@
     font-size: 11px;
     color: #2f6f4f;
     word-break: break-all;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   .msg {
@@ -106,9 +196,7 @@
     color: #6b6b6b;
   }
 
-  .card.resolved {
-    opacity: .5;
-  }
+  .card.resolved { opacity: .5; }
 
   .gone {
     font-size: 11px;
@@ -133,12 +221,17 @@
     resize: vertical;
     margin: 6px 0;
   }
+
+  .meta {
+    font-size: 11px;
+    color: #8a8a8a;
+  }
 </style>
 </head>
 <body>
 <header>
-  <strong>문서 댓글</strong>
-  <small id="build"></small>
+  <strong>API 문서</strong>
+  <small id="build" class="meta"></small>
   <span class="grow"></span>
   <button class="act" id="tokenBtn">토큰</button>
   <small id="me"></small>
@@ -151,55 +244,270 @@
 </main>
 <script>
 let BUNDLE = null;
-const state = { docId: null, anchor: null };
+const state = { proj: null, env: null, ep: null, anchor: null, pending: false };
 
 const $ = (selector) => document.querySelector(selector);
-const doc = () => BUNDLE.docs.find((item) => item.id === state.docId);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const threads = (id) => BUNDLE.comments[id] || [];
 
-function renderNav() {
-  $("#nav").innerHTML = BUNDLE.docs.map((item) =>
-    `<a data-doc="${item.id}">${item.title}</a>`
-  ).join("");
+/* ══ OpenAPI → 화면 모델 ══════════════════════════════════════════════
+   스펙을 그대로 그리지 않고 한 번 편다. 번들에는 스펙 원본이 들어 있고
+   펴는 일은 여기서 한다 — 스펙이 바뀌어도 빌드 스크립트는 그대로다.       */
+
+// 규격이 POST 를 강제하지 않는다. post 만 읽으면 GET 엔드포인트가 문서에서 조용히 사라진다.
+const METHODS = ["post", "get", "put", "patch", "delete"];
+
+const TYPE_LABEL = {
+  "integer:int32": "int", "integer:int64": "long", "integer:": "int",
+  "number:double": "double", "number:float": "float", "number:": "number",
+  "string:date-time": "datetime", "string:date": "date", "string:": "string",
+  "boolean:": "boolean",
+};
+
+function resolveRef(spec, schema) {
+  if (!schema) return null;
+  if (schema.$ref) {
+    return spec.components?.schemas?.[schema.$ref.split("/").pop()] ?? null;
+  }
+  return schema;
 }
 
-function renderDoc() {
-  const current = doc();
+function label(schema) {
+  if (!schema) return "any";
+  const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+  const base = types.find((t) => t && t !== "null") ?? "any";
+  if (schema.enum) return "enum";
+  return TYPE_LABEL[`${base}:${schema.format ?? ""}`] ?? base;
+}
 
-  $("#doc").innerHTML = current.blocks.map((block) => {
-    if (block.type === "code") {
-      return `<pre><code>${esc(block.text)}</code></pre>`;
+/** OpenAPI 스키마를 `granted[].itemId` 형태의 평탄한 필드 목록으로 편다. */
+function flatten(spec, schema, prefix = "", out = [], depth = 0) {
+  const s = resolveRef(spec, schema);
+  if (!s || depth > 6) return out;
+
+  for (const [key, raw] of Object.entries(s.properties ?? {})) {
+    const prop = resolveRef(spec, raw) ?? raw;
+    const types = Array.isArray(prop.type) ? prop.type : [prop.type];
+    const nullable = types.includes("null") || raw.nullable === true;
+    const base = types.find((t) => t && t !== "null");
+    const required = (s.required ?? []).includes(key);
+    const path = prefix ? `${prefix}.${key}` : key;
+
+    if (base === "array") {
+      const item = resolveRef(spec, prop.items);
+      const isObject = item?.type === "object" || item?.properties;
+      out.push({ name: path, type: isObject ? "object[]" : `${label(item)}[]`,
+                 req: required, desc: prop.description ?? "", nullable });
+      if (isObject) flatten(spec, prop.items, `${path}[]`, out, depth + 1);
+    } else if (base === "object" || prop.properties) {
+      out.push({ name: path, type: "object", req: required,
+                 desc: prop.description ?? "", nullable });
+      flatten(spec, raw, path, out, depth + 1);
+    } else {
+      out.push({ name: path, type: label(prop), req: required,
+                 desc: prop.description ?? "", nullable, ex: prop.example });
     }
+  }
+  return out;
+}
 
-    if (block.type === "ul") {
-      return `<ul>${block.items.map((item) => `<li>${item}</li>`).join("")}</ul>`;
+/** 규격 봉투에서 data 스키마만 꺼낸다. 커스터마이저가 감싼 것을 되돌리는 것이다.
+    rCode·errMsg 는 모든 API 가 같으므로 엔드포인트마다 반복하지 않는다. */
+function unwrapData(spec, op) {
+  const schema = op.responses?.["200"]?.content?.["application/json"]?.schema;
+  return schema?.properties?.data ?? null;
+}
+
+const idOf = (path) =>
+  path.replace(/^\/api\/v\d+\//, "").replace(/[{}]/g, "").replace(/\//g, "-");
+
+function adapt(projectId, envId) {
+  const spec = BUNDLE.specs?.[projectId]?.[envId];
+  if (!spec) return [];
+
+  const out = [];
+  for (const [path, item] of Object.entries(spec.paths ?? {})) {
+    for (const method of METHODS) {
+      const op = item[method];
+      if (!op) continue;
+
+      const codes = op["x-rcodes"] ?? [];
+      out.push({
+        // POST 는 접미사를 붙이지 않는다. 오버레이·댓글이 이 id 로 붙는다.
+        id: method === "post" ? idOf(path) : `${idOf(path)}-${method}`,
+        method: method.toUpperCase(),
+        group: op.tags?.[0] ?? "기타",
+        path,
+        enc: op["x-encrypted"] === true,
+        title: op.summary ?? idOf(path),
+        desc: op.description ?? "",
+        req: flatten(spec, op.requestBody?.content?.["application/json"]?.schema),
+        res: flatten(spec, unwrapData(spec, op)),
+        codes,
+      });
     }
+  }
+  return out;
+}
 
-    if (!block.anchor) {
-      return `<${block.type}>${block.html}</${block.type}>`;
-    }
+/* ══ 조회 도우미 ══════════════════════════════════════════════════════ */
+const projects = () => BUNDLE.projects ?? [];
+const proj = () => projects().find((p) => p.id === state.proj);
+const envIds = (p) => Object.keys(p?.envs ?? {});
+const eps = () => adapt(state.proj, state.env);
+const ep = () => eps().find((e) => e.id === state.ep);
 
-    const open = threads(current.id)
-      .filter((t) => t.anchor === block.anchor && !t.resolved).length;
-    const live = state.anchor === block.anchor ? " live" : "";
+const overlayOf = () => BUNDLE.overlay?.[state.proj]?.[state.ep] ?? {};
+const threadsOf = () => BUNDLE.comments?.[state.proj]?.[state.ep] ?? [];
+const specSha = () => BUNDLE.specMeta?.[state.proj]?.[state.env]?.sha ?? "—";
 
-    return `<${block.type} class="sec${live}">${block.html}` +
-      `<button class="cbtn${open ? " on" : ""}" data-anchor="${block.anchor}">` +
-      `${open || "+"}</button></${block.type}>`;
+/** 댓글 배열을 쓰기 가능한 상태로 꺼낸다. 파일이 아직 없으면 만들어 둔다. */
+function threadStore() {
+  BUNDLE.comments ??= {};
+  BUNDLE.comments[state.proj] ??= {};
+  BUNDLE.comments[state.proj][state.ep] ??= [];
+  return BUNDLE.comments[state.proj][state.ep];
+}
+
+const commentKey = () => `${state.proj}/${state.ep}`;
+
+/* ══ 설명 병합 ════════════════════════════════════════════════════════
+   스펙의 description 위에 사람이 쓴 overlay 를 얹는다.
+   코드가 만든 것은 배포가 덮어쓰고, 사람이 쓴 것은 배포가 건드리지 않는다.   */
+function descOf(anchor, fromSpec) {
+  const ko = overlayOf()[anchor]?.ko;
+  return (ko && ko.trim()) ? ko : fromSpec;
+}
+
+/** 스펙에 없는데 overlay 에만 있는 앵커. status: proposed 면 제안이다. */
+function proposedRows(prefix, known) {
+  return Object.entries(overlayOf())
+    .filter(([anchor, v]) =>
+      anchor.startsWith(prefix + ".") &&
+      v?.status === "proposed" &&
+      !known.has(anchor.slice(prefix.length + 1)))
+    .map(([anchor, v]) => ({
+      name: anchor.slice(prefix.length + 1),
+      type: v.type ?? "string",
+      req: false,
+      desc: v.ko ?? "",
+      proposed: true,
+    }));
+}
+
+/* ══ 렌더 ═════════════════════════════════════════════════════════════ */
+function anchorTools(anchor) {
+  const n = threadsOf().filter((t) => t.anchor === anchor && !t.resolved).length;
+  return `<button class="cbtn${n ? " on" : ""}" data-anchor="${esc(anchor)}"
+    title="댓글">${n || "+"}</button>`;
+}
+
+function fieldRows(fields, prefix) {
+  if (!fields.length) {
+    return `<tr><td colspan="4" class="meta">없음</td></tr>`;
+  }
+  return fields.map((f) => {
+    const anchor = `${prefix}.${f.name}`;
+    const live = state.anchor === anchor ? " class=\"live\"" : "";
+    const desc = descOf(anchor, f.desc);
+    const body = desc && desc.trim()
+      ? esc(desc)
+      : `<span class="chip todo">미작성</span>`;
+    return `<tr${live}>
+      <td class="name">${esc(f.name)}
+        ${f.proposed ? '<span class="chip proposed">제안</span>' : ""}</td>
+      <td class="type">${esc(f.type)}${f.nullable ? ' <span class="chip">null</span>' : ""}</td>
+      <td>${f.req ? '<span class="req-y">Y</span>' : "N"}</td>
+      <td>${anchorTools(anchor)} ${body}</td>
+    </tr>`;
   }).join("");
 }
 
-function renderPanel() {
-  const current = doc();
-  const live = new Set(
-    current.blocks.filter((b) => b.anchor).map((b) => b.anchor)
-  );
-  const list = threads(current.id)
-    .filter((t) => !state.anchor || t.anchor === state.anchor);
+function codeRows(codes) {
+  const rows = [{ rCode: 0, constant: "SUCCESS", defaultMessage: "", owner: "lib" }, ...codes];
+  return rows.map((c) => {
+    const anchor = `rc.${c.rCode}`;
+    const live = state.anchor === anchor ? " class=\"live\"" : "";
+    return `<tr${live}>
+      <td class="name">${c.rCode}</td>
+      <td class="name">${esc(c.constant)}</td>
+      <td>${anchorTools(anchor)} ${esc(c.defaultMessage) || '<span class="meta">(빈 문자열)</span>'}</td>
+      <td><span class="chip">${esc(c.owner)}</span></td>
+    </tr>`;
+  }).join("");
+}
 
-  // 앵커를 고른 상태에서만 입력창을 띄운다. 어디에 붙일지 정해져야 쓸 수 있다.
+function renderNav() {
+  const html = projects().map((p) => {
+    const list = adapt(p.id, envIds(p)[0]).map((e) =>
+      `<a data-ep="${esc(p.id)}|${esc(e.id)}" class="${e.id === state.ep ? "on" : ""}"
+        >${esc(e.method)} ${esc(e.path)}</a>`).join("");
+    return `<div class="group">${esc(p.name)}</div>${list}`;
+  }).join("");
+  $("#nav").innerHTML = html;
+}
+
+function renderEndpoint() {
+  const e = ep();
+  if (!e) {
+    $("#doc").innerHTML = `<p class="meta">엔드포인트가 없습니다. spec/ 을 확인하세요.</p>`;
+    return;
+  }
+
+  const pathLive = state.anchor === "ep.path" ? " live" : "";
+  const descLive = state.anchor === "ep.desc" ? " live" : "";
+  const desc = descOf("ep.desc", e.desc);
+
+  $("#doc").innerHTML = `
+    <div class="eyebrow">${esc(e.group)}</div>
+    <div class="path${pathLive}">
+      <span class="method m-${esc(e.method.toLowerCase())}">${esc(e.method)}</span>
+      <code>${esc(e.path)}</code>
+      ${e.enc ? '<span class="seal">&#9679; 암호화</span>'
+              : '<span class="seal plain">&#9675; 평문</span>'}
+      ${anchorTools("ep.path")}
+    </div>
+    <p class="${descLive}">${anchorTools("ep.desc")}
+      ${desc && desc.trim() ? esc(desc) : '<span class="chip todo">미작성</span>'}</p>
+    <p class="meta">스펙 ${esc(specSha())} · 빌드 ${esc(BUNDLE.buildSha)}</p>
+
+    <h3>REQUEST</h3>
+    <table>
+      <thead><tr><th style="width:26%">필드</th><th style="width:16%">타입</th>
+        <th style="width:8%">필수</th><th>설명</th></tr></thead>
+      <tbody>${fieldRows(
+        [...e.req, ...proposedRows("req", new Set(e.req.map((f) => f.name)))], "req")}</tbody>
+    </table>
+
+    <h3>RESPONSE · DATA</h3>
+    <table>
+      <thead><tr><th style="width:26%">필드</th><th style="width:16%">타입</th>
+        <th style="width:8%">필수</th><th>설명</th></tr></thead>
+      <tbody>${fieldRows(
+        [...e.res, ...proposedRows("res", new Set(e.res.map((f) => f.name)))], "res")}</tbody>
+    </table>
+
+    <h3>RCODE</h3>
+    <table>
+      <thead><tr><th style="width:13%">rCode</th><th style="width:26%">상수</th>
+        <th>errMsg</th><th style="width:10%">소유</th></tr></thead>
+      <tbody>${codeRows(e.codes)}</tbody>
+    </table>`;
+}
+
+function renderPanel() {
+  const e = ep();
+  // 지금 화면에 실제로 존재하는 앵커. 여기 없는 댓글은 사라진 필드에 붙어 있는 것이다.
+  const live = new Set(["ep.path", "ep.desc"]);
+  if (e) {
+    e.req.forEach((f) => live.add(`req.${f.name}`));
+    e.res.forEach((f) => live.add(`res.${f.name}`));
+    live.add("rc.0");
+    e.codes.forEach((c) => live.add(`rc.${c.rCode}`));
+  }
+
+  const list = threadsOf().filter((t) => !state.anchor || t.anchor === state.anchor);
+
   const head = state.anchor
     ? `<div class="card">
          <div class="anchor">${esc(state.anchor)}</div>
@@ -207,13 +515,13 @@ function renderPanel() {
          <button class="act" data-act="create">등록</button>
          <button class="act" data-act="clear">취소</button>
        </div>`
-    : `<small>제목 옆 버튼으로 앵커를 고릅니다</small>`;
+    : `<small class="meta">표의 + 버튼으로 앵커를 고릅니다</small>`;
 
   const cards = list.length
     ? list.map((t) => `
         <div class="card ${t.resolved ? "resolved" : ""}">
           <div class="anchor">${esc(t.anchor)}
-            ${live.has(t.anchor) ? "" : `<span class="gone">· 사라진 섹션</span>`}
+            ${live.has(t.anchor) ? "" : `<span class="gone">· 사라진 필드</span>`}
           </div>
           ${t.messages.map((m) => `
             <div class="msg">
@@ -228,26 +536,24 @@ function renderPanel() {
             </button>
           </div>
         </div>`).join("")
-    : `<small>이 앵커에는 댓글이 없습니다</small>`;
+    : `<small class="meta">이 앵커에는 댓글이 없습니다</small>`;
 
   // 커밋은 됐어도 Pages 재빌드 전이라 새로고침하면 사라진다. 그 간극을 알린다.
   const pending = state.pending
     ? `<div class="gone">저장됨 · 배포 반영까지 1~2분</div>`
     : "";
 
-  $("#panel").innerHTML =
-    `<div style="margin-bottom:10px">${head}${pending}</div>${cards}`;
+  $("#panel").innerHTML = `<div style="margin-bottom:10px">${head}${pending}</div>${cards}`;
 }
 
 function render() {
   renderNav();
-  renderDoc();
+  renderEndpoint();
   renderPanel();
 }
 
-// 저장은 비동기라 핸들러 자체를 async 로 바꾼다.
 document.addEventListener("click", async (event) => {
-  const el = event.target.closest("[data-doc],[data-anchor],[data-act]");
+  const el = event.target.closest("[data-ep],[data-anchor],[data-act]");
   if (!el) return;
 
   // 저장을 일으키는 액션들. 화면 전환 분기와 분리해 오류를 처리한다.
@@ -260,16 +566,12 @@ document.addEventListener("click", async (event) => {
     try {
       await runAction(el.dataset.act, el.dataset.id);
     } catch (err) {
-      // CONFLICT 는 우리 검사, 나머지는 GitHub 이 준 상태 코드다.
-      // 화면이 보는 기준은 번들이 만들어진 시점이라, 해소 방법이 환경마다 다르다.
       alert(err.message === "CONFLICT"
         ? "댓글 파일이 그새 바뀌었습니다.\n\n" +
           "배포 사이트: 새로고침\n" +
           "로컬: git pull 후 빌드하고 새로고침"
         : `저장 실패: ${err.message}`);
     } finally {
-      // 저장에 성공하면 render 가 카드를 새로 그려 이 버튼은 버려진다.
-      // 실패했거나 빈 입력이라 저장을 건너뛴 경우에만 실제로 풀린다.
       el.disabled = false;
     }
     return;
@@ -277,8 +579,11 @@ document.addEventListener("click", async (event) => {
 
   if (el.dataset.act === "clear") {
     state.anchor = null;
-  } else if (el.dataset.doc) {
-    state.docId = el.dataset.doc;
+  } else if (el.dataset.ep) {
+    const [proj, epId] = el.dataset.ep.split("|");
+    state.proj = proj;
+    state.env = envIds(projects().find((p) => p.id === proj))[0];
+    state.ep = epId;
     state.anchor = null;
   } else {
     state.anchor = state.anchor === el.dataset.anchor ? null : el.dataset.anchor;
@@ -335,6 +640,7 @@ async function gh(path, options = {}) {
 
   return response.status === 204 ? null : response.json();
 }
+
 /* ══ YAML 출력 ═════════════════════════════════════════════════════════
    스키마가 고정이라 직접 쓴다. 문자열은 JSON.stringify 로 감싼다.
    YAML 1.2 는 JSON 의 상위집합이라 JSON 문자열이 그대로 유효한
@@ -345,7 +651,7 @@ function dumpComments(list) {
   for (const t of list) {
     out.push(`- id: ${t.id}`);
     out.push(`  anchor: ${JSON.stringify(t.anchor)}`);
-    out.push(`  rev: ${JSON.stringify(t.rev ?? "—")}`);
+    out.push(`  spec: ${JSON.stringify(t.spec ?? "—")}`);
     out.push(`  resolved: ${t.resolved === true}`);
     out.push(`  messages:`);
 
@@ -374,18 +680,15 @@ function b64(text) {
 }
 
 /* ══ 저장 ══════════════════════════════════════════════════════════════
-   파일을 통째로 바꿔 커밋한다. 배열을 어떻게 바꿀지는 mutate 가 정한다.
-   6단계의 답글·해결도 같은 흐름이라 이 함수 하나를 공유한다.
-   나중에 workflow_dispatch 방식으로 옮길 때도 여기만 갈아끼우면 된다. */
+   파일을 통째로 바꿔 커밋한다. 배열을 어떻게 바꿀지는 mutate 가 정한다. */
 async function save(mutate, message) {
-  // 인증 없이 호출하면 401 이 난다. 그 전에 걸러 낸다.
   if (!token()) throw new Error("토큰을 먼저 넣으세요");
 
-  const docId = state.docId;
-  const path = `comments/${docId}.yaml`;
+  const key = commentKey();
+  const path = `comments/${key}.yaml`;
   const { repo, branch } = BUNDLE.config;
 
-  // 현재 GitHub 에 있는 파일을 읽는다. 아직 없는 문서면 404 가 나는데,
+  // 현재 GitHub 에 있는 파일을 읽는다. 아직 없으면 404 가 나는데
   // 그건 오류가 아니라 "새로 만들어야 한다"는 뜻이므로 통과시킨다.
   let current = null;
 
@@ -397,19 +700,16 @@ async function save(mutate, message) {
 
   // 화면이 만들어질 때의 파일과 지금 파일이 같은지 본다.
   // 다르면 내가 보고 있는 댓글 목록이 이미 낡았다는 뜻이라 멈춘다.
-  const known = BUNDLE.commentsMeta[docId]?.sha ?? null;
+  const known = BUNDLE.commentsMeta?.[key]?.sha ?? null;
   if ((current?.sha ?? null) !== known) throw new Error("CONFLICT");
 
-  // 메모리의 배열을 바꾼다. 아직 GitHub 에는 아무 영향이 없다.
-  mutate(threads(docId));
+  mutate(threadStore());
 
-  // 바뀐 배열을 YAML 로 만들어 파일 전체를 덮어쓴다.
-  // sha 는 "이 버전을 고친다"는 뜻이고, 그새 바뀌었으면 GitHub 이 409 로 막는다.
   const result = await gh(`/repos/${repo}/contents/${path}`, {
     method: "PUT",
     body: JSON.stringify({
       message,
-      content: b64(dumpComments(threads(docId))),
+      content: b64(dumpComments(threadStore())),
       branch,
       ...(current ? { sha: current.sha } : {}),
     }),
@@ -417,40 +717,32 @@ async function save(mutate, message) {
 
   // 방금 만든 파일 상태를 새 기준으로 삼는다.
   // 안 하면 두 번째 저장부터 전부 CONFLICT 로 막힌다.
-  BUNDLE.commentsMeta[docId] = { sha: result.content.sha };
+  BUNDLE.commentsMeta ??= {};
+  BUNDLE.commentsMeta[key] = { sha: result.content.sha };
 
-  // 저장은 됐지만 배포 전이라 화면과 실제 사이트가 잠시 다르다.
   state.pending = true;
   render();
 }
 
-/* 화면의 버튼을 저장으로 연결한다. 6단계에서 답글·해결이 여기 붙는다. */
 async function runAction(act, id) {
   if (act === "create") {
-    // 빈 댓글은 저장하지 않는다.
     const body = $("#newBody").value.trim();
     if (!body) return;
 
     // save 안에서 render 가 돌면 입력창이 사라지므로 값을 먼저 꺼내 둔다.
     const anchor = state.anchor;
-    const rev = doc().rev.sha;      // 작성 시점의 문서 커밋. 나중에 낡음 판정에 쓴다
+    const spec = specSha();   // 작성 시점의 스펙 커밋. 나중에 낡음 판정에 쓴다
     const who = $("#me").textContent || "unknown";
     const when = new Date().toISOString().slice(0, 10);
 
     await save((list) => {
-      // id 는 파일 안에서만 유일하면 된다. 동시 작성이 겹치면 PR 에서 드러난다.
       const nextId = Math.max(0, ...list.map((t) => t.id)) + 1;
-
-      list.push({
-        id: nextId, anchor, rev, resolved: false,
-        messages: [{ who, when, body }],
-      });
-    }, `comments(${state.docId}): 새 댓글`);
+      list.push({ id: nextId, anchor, spec, resolved: false,
+                  messages: [{ who, when, body }] });
+    }, `comments(${commentKey()}): 새 댓글`);
   }
 
-  // 기존 스레드에 메시지를 덧붙인다. 파일 저장 흐름은 create 와 완전히 같다.
   if (act === "reply") {
-    // 카드마다 입력창이 따로 있으므로 id 로 해당 카드의 것을 찾는다.
     const box = document.querySelector(`[data-reply="${id}"]`);
     const body = box.value.trim();
     if (!body) return;
@@ -459,10 +751,8 @@ async function runAction(act, id) {
     const when = new Date().toISOString().slice(0, 10);
 
     await save((list) => {
-      // id 는 문자열로 넘어오므로 숫자로 바꿔 비교한다.
-      list.find((t) => t.id === Number(id))
-        .messages.push({ who, when, body });
-    }, `comments(${state.docId}): 스레드 ${id} 답글`);
+      list.find((t) => t.id === Number(id)).messages.push({ who, when, body });
+    }, `comments(${commentKey()}): 스레드 ${id} 답글`);
   }
 
   // 해결 상태만 뒤집는다. 삭제 대신 이 방식을 쓰는 이유는
@@ -471,16 +761,23 @@ async function runAction(act, id) {
     await save((list) => {
       const thread = list.find((t) => t.id === Number(id));
       thread.resolved = !thread.resolved;
-    }, `comments(${state.docId}): 스레드 ${id} 해결 상태 변경`);
+    }, `comments(${commentKey()}): 스레드 ${id} 해결 상태 변경`);
   }
 }
 
 (async function boot() {
-  BUNDLE = await (
-    await fetch("data/bundle.json", { cache: "no-store" })
-  ).json();
+  BUNDLE = await (await fetch("data/bundle.json", { cache: "no-store" })).json();
 
-  state.docId = BUNDLE.docs[0]?.id ?? null;
+  const first = projects()[0];
+  if (!first) {
+    $("#doc").innerHTML = `<p class="gone">등록된 프로젝트가 없습니다. projects.yaml 을 확인하세요.</p>`;
+    return;
+  }
+
+  state.proj = first.id;
+  state.env = envIds(first)[0];
+  state.ep = adapt(state.proj, state.env)[0]?.id ?? null;
+
   $("#build").textContent = `빌드 ${BUNDLE.buildSha}`;
   if (token()) verifyToken().catch(() => {});
   render();

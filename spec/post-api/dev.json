@@ -1,0 +1,280 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "OpenAPI definition",
+        "version": "v0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080",
+            "description": "Generated server url"
+        }
+    ],
+    "paths": {
+        "/api/v1/post": {
+            "post": {
+                "tags": [
+                    "post-controller"
+                ],
+                "operationId": "create",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreatePostRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rCode": {
+                                            "description": "0 = \uc131\uacf5",
+                                            "example": 0
+                                        },
+                                        "errMsg": {
+                                            "type": "string",
+                                            "description": "\uc131\uacf5 \uc2dc \ube48 \ubb38\uc790\uc5f4",
+                                            "example": ""
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PostResponse",
+                                            "description": "\uc2e4\ud328 \uc2dc null. \uc131\uacf5 \uc2dc\uc5d0\ub3c4 null \uc77c \uc218 \uc788\ub2e4."
+                                        }
+                                    },
+                                    "required": [
+                                        "errMsg",
+                                        "rCode"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-encrypted": true,
+                "x-rcodes": [
+                    {
+                        "rCode": 1000,
+                        "constant": "INVALID_REQUEST",
+                        "defaultMessage": "\uc694\uccad \uac12\uc774 \uc62c\ubc14\ub974\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4",
+                        "owner": "lib"
+                    }
+                ]
+            }
+        },
+        "/api/v1/post/{id}": {
+            "get": {
+                "tags": [
+                    "post-controller"
+                ],
+                "operationId": "get",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rCode": {
+                                            "description": "0 = \uc131\uacf5",
+                                            "example": 0
+                                        },
+                                        "errMsg": {
+                                            "type": "string",
+                                            "description": "\uc131\uacf5 \uc2dc \ube48 \ubb38\uc790\uc5f4",
+                                            "example": ""
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PostResponse",
+                                            "description": "\uc2e4\ud328 \uc2dc null. \uc131\uacf5 \uc2dc\uc5d0\ub3c4 null \uc77c \uc218 \uc788\ub2e4."
+                                        }
+                                    },
+                                    "required": [
+                                        "errMsg",
+                                        "rCode"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-encrypted": true,
+                "x-rcodes": [
+                    {
+                        "rCode": 2000,
+                        "constant": "NOT_FOUND",
+                        "defaultMessage": "\ub300\uc0c1\uc744 \ucc3e\uc744 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4",
+                        "owner": "lib"
+                    }
+                ]
+            }
+        },
+        "/api/v1/post/ping": {
+            "get": {
+                "tags": [
+                    "post-controller"
+                ],
+                "operationId": "ping",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rCode": {
+                                            "description": "0 = \uc131\uacf5",
+                                            "example": 0
+                                        },
+                                        "errMsg": {
+                                            "type": "string",
+                                            "description": "\uc131\uacf5 \uc2dc \ube48 \ubb38\uc790\uc5f4",
+                                            "example": ""
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PingResponse",
+                                            "description": "\uc2e4\ud328 \uc2dc null. \uc131\uacf5 \uc2dc\uc5d0\ub3c4 null \uc77c \uc218 \uc788\ub2e4."
+                                        }
+                                    },
+                                    "required": [
+                                        "errMsg",
+                                        "rCode"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-encrypted": false,
+                "x-rcodes": []
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ApiResponse": {
+                "type": "object",
+                "properties": {
+                    "rCode": {
+                        "type": "integer",
+                        "format": "int32",
+                        "writeOnly": true
+                    },
+                    "errMsg": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "null"
+                    },
+                    "rcode": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "required": [
+                    "errMsg",
+                    "rcode"
+                ]
+            },
+            "CreatePostRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "minLength": 0
+                    },
+                    "body": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "body",
+                    "title"
+                ]
+            },
+            "PostResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "isPublished": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "isPublished",
+                    "title"
+                ]
+            },
+            "PingResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "message"
+                ]
+            }
+        }
+    }
+}

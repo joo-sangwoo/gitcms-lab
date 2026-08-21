@@ -1,209 +1,143 @@
 #!/usr/bin/env python3
-"""content/*.md(문서) + comments/*.yaml(댓글) → 사이트가 읽는 단일 번들.
+"""spec JSON(CI 가 올리는 것) + YAML(사람이 쓰는 것) → 사이트가 읽는 단일 번들.
 
-정적 사이트는 파서 없이 JSON 만 읽는다. 마크다운 해석도 여기서 끝내고
-브라우저에는 블록 배열만 넘긴다.
+정적 사이트는 파서 없이 JSON 만 읽는다. 그렇다고 사람이 편집하는 파일까지 JSON 으로
+두면 주석을 못 달고 diff 가 지저분해지므로, 저장은 YAML 로 하고 배포 시점에 변환한다.
+
+소유권 규칙이 이 파일의 구조를 결정한다.
+
+    spec/       기계가 만든다. 배포가 통째로 덮어쓴다
+    overlay/    사람이 쓴다. 배포가 건드리지 않는다
+    comments/   사람이 쓴다. 배포가 건드리지 않는다
+
+둘은 렌더링 시점에 앵커로 합쳐지므로 서로 덮어쓸 일이 없다.
 """
-import html
 import json
 import pathlib
-import re
 import subprocess
 import sys
 
-# YAML 파일을 읽기 위해 PyYAML을 불러온다.
 try:
     import yaml
 except ImportError:
     sys.exit("PyYAML 이 필요합니다: pip install pyyaml")
-# 현재 스크립트 위치를 기준으로 저장소 루트 경로를 찾는다.
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-# 생성할 bundle.json의 저장 디렉터리 경로를 지정한다.
 OUT = ROOT / "_site" / "data"
-# Git 명령을 실행하고 결과를 반환한다.
-# 실패하면 빈 문자열을 반환한다.
+
+
+def load_yaml(path: pathlib.Path):
+    with path.open(encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
 def git(*args: str) -> str:
     """git 출력. 저장소가 아니거나 실패하면 빈 문자열."""
     try:
         return subprocess.run(
-            ["git", *args],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=True,
+            ["git", *args], cwd=ROOT, capture_output=True, text=True, check=True
         ).stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return ""
 
-# 제목을 댓글 앵커에 사용할 slug로 변환한다.
-def slugify(text: str) -> str:
-    """제목 → 앵커 slug. 한글은 그대로 유지한다."""
-    s = re.sub(r"[^\w\s-]", "", text.strip().lower())
-    return re.sub(r"[\s_]+", "-", s).strip("-")
 
-# 문단과 제목의 인라인 서식을 HTML로 변환한다.
-def inline(text: str) -> str:
-    """HTML 이스케이프 후 코드와 굵은 글씨를 처리한다."""
-    out = html.escape(text, quote=False)
-    out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
-    return re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", out)
+def collect_specs() -> dict:
+    """spec/{project}/{env}.json → { project: { env: spec } }
 
-# Markdown을 제목, 문단, 목록, 코드블록의 블록 배열로 변환한다.
-def parse_markdown(text: str) -> list[dict]:
-    """지원할 Markdown 문법만 처리하는 간단한 변환기."""
-    lines = text.splitlines()
-    blocks: list[dict] = []
-    buf: list[str] = []
-    i = 0
+    스펙은 손대지 않고 그대로 담는다. OpenAPI 를 화면 모델로 펴는 일은 브라우저가 한다.
+    여기서 미리 펴 두면 스펙이 바뀔 때마다 이 스크립트도 같이 고쳐야 한다.
+    """
+    result: dict[str, dict] = {}
+    base = ROOT / "spec"
+    if not base.exists():
+        return result
 
-    # 모아 둔 일반 문단 줄을 하나의 p 블록으로 만든다.
-    def flush() -> None:
-        if buf:
-            blocks.append({"type": "p", "html": inline(" ".join(buf))})
-            buf.clear()
+    for path in sorted(base.rglob("*.json")):
+        project = path.parent.name
+        with path.open(encoding="utf-8") as f:
+            result.setdefault(project, {})[path.stem] = json.load(f)
+    return result
 
-    while i < len(lines):
-        line = lines[i]
 
-        if line.startswith("```"):
-            flush()
-            i += 1
-            code = []
+def spec_meta(project: str, env: str) -> dict:
+    """그 스펙 파일이 마지막으로 갱신된 커밋. '이 문서가 최신인가'의 근거가 된다."""
+    out = git("log", "-1", "--format=%h\t%cs", "--", f"spec/{project}/{env}.json")
+    if not out:
+        return {"sha": "—", "at": "—"}
+    sha, at = out.split("\t", 1)
+    return {"sha": sha, "at": at}
 
-            while i < len(lines) and not lines[i].startswith("```"):
-                code.append(lines[i])
-                i += 1
 
-            blocks.append({"type": "code", "text": "\n".join(code)})
+def collect(kind: str) -> dict:
+    """overlay|comments/{project}/{endpoint}.yaml → { project: { endpoint: 내용 } }"""
+    result: dict[str, dict] = {}
+    base = ROOT / kind
+    if not base.exists():
+        return result
 
-        elif line.startswith("#"):
-            flush()
-            level = len(line) - len(line.lstrip("#"))
-            title = line[level:].strip()
-            block = {"type": f"h{level}", "html": inline(title)}
+    for path in sorted(base.rglob("*.yaml")):
+        project = path.parent.name
+        result.setdefault(project, {})[path.stem] = load_yaml(path)
+    return result
 
-            if level >= 2:
-                block["anchor"] = f"sec.{slugify(title)}"
 
-            blocks.append(block)
+def comments_meta() -> dict:
+    """댓글 파일의 blob SHA. 저장할 때 충돌 판정에 쓴다.
 
-        elif line.startswith("- "):
-            flush()
-            items = []
-
-            while i < len(lines) and lines[i].startswith("- "):
-                items.append(inline(lines[i][2:].strip()))
-                i += 1
-
-            blocks.append({"type": "ul", "items": items})
-            continue
-
-        elif not line.strip():
-            flush()
-
-        else:
-            buf.append(line.strip())
-
-        i += 1
-
-    flush()
-    return blocks
-
-# content/*.md 파일을 읽어 문서 목록으로 만든다.
-def collect_docs() -> list[dict]:
-    docs = []
-
-    for path in sorted((ROOT / "content").glob("*.md")):
-        blocks = parse_markdown(path.read_text(encoding="utf-8"))
-
-        title = next(
-            (b["html"] for b in blocks if b["type"] == "h1"),
-            path.stem,
-        )
-
-        out = git(
-            "log",
-            "-1",
-            "--format=%h\t%cs",
-            "--",
-            f"content/{path.name}",
-        )
-
-        sha, at = out.split("\t", 1) if out else ("—", "—")
-
-        docs.append(
-            {
-                "id": path.stem,
-                "title": title,
-                "blocks": blocks,
-                "rev": {"sha": sha, "at": at},
-            }
-        )
-
-    return docs
-
-# comments/*.yaml 파일과 각 파일의 Git blob SHA를 수집한다.
-def collect_comments() -> tuple[dict, dict]:
-    """댓글 목록과 Git blob SHA를 함께 반환한다."""
-    threads: dict[str, list] = {}
+    화면이 만들어진 시점의 파일과 저장 직전의 파일이 같은지 비교하는 기준이다.
+    """
     meta: dict[str, dict] = {}
     base = ROOT / "comments"
-
     if not base.exists():
-        return threads, meta
+        return meta
 
-    for path in sorted(base.glob("*.yaml")):
-        with path.open(encoding="utf-8") as f:
-            threads[path.stem] = yaml.safe_load(f) or []
+    for path in sorted(base.rglob("*.yaml")):
+        rel = path.relative_to(ROOT).as_posix()
+        meta[f"{path.parent.name}/{path.stem}"] = {"sha": git("hash-object", rel)}
+    return meta
 
-        meta[path.stem] = {
-            "sha": git("hash-object", f"comments/{path.name}")
-        }
 
-    return threads, meta
-
-# 번들 생성에 필요한 데이터를 모아 JSON 파일로 저장한다.
 def main() -> None:
-    # config.yaml을 읽는다.
-    config = yaml.safe_load(
-        (ROOT / "config.yaml").read_text(encoding="utf-8")
-    ) or {}
+    config = load_yaml(ROOT / "config.yaml")
+    registry = load_yaml(ROOT / "projects.yaml")
+    specs = collect_specs()
 
-    # 문서와 댓글을 수집한다.
-    docs = collect_docs()
-    comments, meta = collect_comments()
+    # 레지스트리에 있는데 스펙이 없으면 아직 배포되지 않은 것이다. 조용히 넘기지 않는다 —
+    # 그냥 두면 등록한 환경의 문서가 빈 화면으로 보이고 원인을 찾기 어렵다.
+    for project in registry.get("projects", []):
+        pid = project["id"]
+        for env in project.get("envs", {}):
+            if env not in specs.get(pid, {}):
+                print(f"  경고: {pid}/{env} 스펙이 없습니다 (spec/{pid}/{env}.json)")
 
-    # 문서가 없는데 댓글 파일만 있는 경우 경고한다.
-    ids = {doc["id"] for doc in docs}
-    for doc_id in comments:
-        if doc_id not in ids:
-            print(f"경고: comments/{doc_id}.yaml에 대응하는 문서가 없습니다")
-
-    # 최종 JSON 구조를 만든다.
     bundle = {
         "config": config,
         "buildSha": git("rev-parse", "--short", "HEAD") or "—",
-        "docs": docs,
-        "comments": comments,
-        "commentsMeta": meta,
+        "projects": registry.get("projects", []),
+        "specs": specs,
+        "specMeta": {
+            pid: {env: spec_meta(pid, env) for env in envs}
+            for pid, envs in specs.items()
+        },
+        "overlay": collect("overlay"),
+        "comments": collect("comments"),
+        "commentsMeta": comments_meta(),
     }
 
-    # 출력 디렉터리를 만들고 bundle.json을 저장한다.
     OUT.mkdir(parents=True, exist_ok=True)
     target = OUT / "bundle.json"
-
     with target.open("w", encoding="utf-8") as f:
-        json.dump(
-            bundle,
-            f,
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
+        json.dump(bundle, f, ensure_ascii=False, separators=(",", ":"))
 
-    # 생성 결과를 출력한다.
-    count = sum(len(items) for items in comments.values())
-    print(f"번들 생성: {target.relative_to(ROOT)} (문서 {len(docs)}개, 댓글 {count}개)")
+    endpoints = sum(
+        len(spec.get("paths", {})) for envs in specs.values() for spec in envs.values()
+    )
+    print(
+        f"번들 생성: {target.relative_to(ROOT)} "
+        f"({target.stat().st_size // 1024}KB, 프로젝트 {len(bundle['projects'])}개, "
+        f"경로 {endpoints}개)"
+    )
 
-# 이 파일을 직접 실행할 때만 main()을 호출한다.
+
 if __name__ == "__main__":
     main()
